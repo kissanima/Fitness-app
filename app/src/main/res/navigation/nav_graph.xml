@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/nav_graph"
+    app:startDestination="@id/homeFragment">
+
+    <!-- Keep all existing fragment declarations as they are -->
+    <fragment
+        android:id="@+id/homeFragment"
+        android:name="com.google.mediapipe.examples.poselandmarker.fragment.HomeFragment"
+        android:label="Home"
+        tools:layout="@layout/fragment_home">
+        <action
+            android:id="@+id/action_homeFragment_to_permissions_fragment"
+            app:destination="@id/permissions_fragment" />
+        <!-- Keep this action, it's important for direct navigation -->
+        <action
+            android:id="@+id/action_homeFragment_to_camera_fragment"
+            app:destination="@id/camera_fragment" />
+    </fragment>
+
+    <!-- Keep permissions fragment as is -->
+    <fragment
+        android:id="@+id/permissions_fragment"
+        android:name="com.google.mediapipe.examples.poselandmarker.fragment.PermissionsFragment"
+        android:label="PermissionsFragment">
+        <action
+            android:id="@+id/action_permissions_to_camera"
+            app:destination="@id/camera_fragment"
+            app:popUpTo="@id/permissions_fragment"
+            app:popUpToInclusive="true" />
+    </fragment>
+
+    <!-- Camera fragment - REMOVE the duplicate action and keep only one -->
+    <fragment
+        android:id="@+id/camera_fragment"
+        android:name="com.google.mediapipe.examples.poselandmarker.fragment.CameraFragment"
+        android:label="CameraFragment">
+        <action
+            android:id="@+id/action_camera_to_permissions"
+            app:destination="@id/permissions_fragment"
+            app:popUpTo="@id/camera_fragment"
+            app:popUpToInclusive="true" />
+        <!-- KEEP ONLY THIS ONE action for returning to home, DELETE the duplicate -->
+        <action
+            android:id="@+id/action_camera_to_home"
+            app:destination="@id/homeFragment"
+            app:popUpTo="@id/nav_graph"
+            app:popUpToInclusive="false"
+            app:launchSingleTop="true" />
+    </fragment>
+
+    <!-- Keep gallery fragment as is -->
+    <fragment
+        android:id="@+id/gallery_fragment"
+        android:name="com.google.mediapipe.examples.poselandmarker.fragment.GalleryFragment"
+        android:label="GalleryFragment" />
+
+    <fragment
+        android:id="@+id/action_homeFragment_to_leaderboardFragment"
+        android:name="com.google.mediapipe.examples.poselandmarker.fragment.LeaderboardFragment"
+        android:label="Leaderboard" />
+
+</navigation>

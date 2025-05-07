@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <item name="radioGroupGender" type="id" />
+    <item name="radioMale" type="id" />
+    <item name="radioFemale" type="id" />
+    <item name="radioOther" type="id" />
+    <item name="buttonRegister" type="id" />
+    <item name="buttonBackToLogin" type="id" />
+    <item name="editTextUsername" type="id" />
+</resources>

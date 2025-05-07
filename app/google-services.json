@@ -1,0 +1,40 @@
+{
+  "project_info": {
+    "project_number": "168476269616",
+    "firebase_url": "https://gamified-fitness-app-2046f-default-rtdb.asia-southeast1.firebasedatabase.app",
+    "project_id": "gamified-fitness-app-2046f",
+    "storage_bucket": "gamified-fitness-app-2046f.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:168476269616:android:0e9ca514f3b30fa92ae1f5",
+        "android_client_info": {
+          "package_name": "com.google.mediapipe.examples.poselandmarker"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "168476269616-i3nuhfagkqn944l09ovevgfq4pr63nue.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC0LPh3d8eYM9BlczWKljukObzlaGFNFCU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "168476269616-i3nuhfagkqn944l09ovevgfq4pr63nue.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
