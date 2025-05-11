@@ -73,4 +73,89 @@
         app:srcCompat="@drawable/ic_flip_camera"
         app:fabSize="normal" />
 
+    <!-- Challenge Badge -->
+    <androidx.cardview.widget.CardView
+        android:id="@+id/challengeBadge"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_margin="16dp"
+        android:layout_gravity="top|end"
+        app:cardCornerRadius="24dp"
+        app:cardElevation="6dp"
+        app:cardBackgroundColor="@android:color/holo_purple">
+
+        <ImageView
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:layout_gravity="center"
+            android:src="@drawable/ic_challenge" />
+    </androidx.cardview.widget.CardView>
+
+    <!-- Challenge Card (initially invisible) -->
+    <androidx.cardview.widget.CardView
+        android:id="@+id/challengeCard"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="16dp"
+        android:layout_gravity="top|end"
+        android:layout_marginTop="80dp"
+        android:visibility="gone"
+        app:cardCornerRadius="16dp"
+        app:cardElevation="8dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp"
+            android:background="@drawable/gradient_background">
+
+            <TextView
+                android:id="@+id/challengeTitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Daily Challenge"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="#FFFFFF"/>
+
+            <TextView
+                android:id="@+id/challengeDescription"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="Complete 20 push-ups today"
+                android:textColor="#FFFFFF"/>
+
+            <ProgressBar
+                android:id="@+id/challengeProgress"
+                style="@style/Widget.AppCompat.ProgressBar.Horizontal"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:progress="0"
+                android:max="100"/>
+
+            <TextView
+                android:id="@+id/challengeReward"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="Reward: 50 points"
+                android:textColor="#FFFFFF"/>
+
+            <Button
+                android:id="@+id/dismissButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="end"
+                android:layout_marginTop="8dp"
+                android:text="Dismiss"
+                android:textColor="#FFFFFF"
+                android:background="@android:color/transparent"/>
+        </LinearLayout>
+    </androidx.cardview.widget.CardView>
+
+
+
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

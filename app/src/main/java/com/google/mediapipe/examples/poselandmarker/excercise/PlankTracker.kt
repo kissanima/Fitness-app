@@ -12,6 +12,8 @@ import android.widget.Toast
 import androidx.core.content.ContextCompat
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.*
+import com.google.mediapipe.examples.poselandmarker.achievements.AchievementConstants
+import com.google.mediapipe.examples.poselandmarker.achievements.AchievementManager
 import com.google.mediapipe.examples.poselandmarker.excercise.AngleHelper
 import com.google.mediapipe.tasks.components.containers.NormalizedLandmark
 import org.json.JSONArray
@@ -35,11 +37,11 @@ class PlankTracker(
     private var isInPlankPosition = false
     private var plankStartTime = 0L
     private var lastPointAwardTime = 0L
-    private var totalPlankDuration = 0L
+    var totalPlankDuration = 0L
 
     // Configuration
     private val pointAwardInterval = 2000 // 2 seconds in milliseconds
-    private val pointsPerInterval = 5 // Points awarded every 2 seconds
+    private val pointsPerInterval = 1 // Points awarded every 2 seconds
     private val staminaIncrementPerInterval = 0.2f // Stamina increase per 2 seconds
     private val angleHelper = AngleHelper()
 
@@ -686,6 +688,25 @@ class PlankTracker(
             }
         }
     }
+
+    fun checkForAchievements() {
+        val achievementManager = AchievementManager(database)
+
+        // Check plank duration achievements
+        for ((id, info) in AchievementConstants.PLANK_ACHIEVEMENTS) {
+            val durationSeconds = totalPlankDuration / 1000
+            if (durationSeconds >= info.threshold) {
+                achievementManager.unlockAchievement(userId, id, mapOf(
+                    "title" to info.title,
+                    "description" to info.description,
+                    "exerciseType" to "plank",
+                    "value" to durationSeconds
+                ))
+                //showAchievementToast(info.title)
+            }
+        }
+    }
+
 
 
 

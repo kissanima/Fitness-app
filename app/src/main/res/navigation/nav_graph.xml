@@ -14,10 +14,16 @@
         <action
             android:id="@+id/action_homeFragment_to_permissions_fragment"
             app:destination="@id/permissions_fragment" />
-        <!-- Keep this action, it's important for direct navigation -->
         <action
             android:id="@+id/action_homeFragment_to_camera_fragment"
             app:destination="@id/camera_fragment" />
+        <action
+            android:id="@+id/action_homeFragment_to_dailyChallengesFragment"
+            app:destination="@id/dailyChallengesFragment" />
+        <action
+            android:id="@+id/action_homeFragment_to_achievementsFragment"
+            app:destination="@id/achievementsFragment" />
+
     </fragment>
 
     <!-- Keep permissions fragment as is -->
@@ -61,5 +67,25 @@
         android:id="@+id/action_homeFragment_to_leaderboardFragment"
         android:name="com.google.mediapipe.examples.poselandmarker.fragment.LeaderboardFragment"
         android:label="Leaderboard" />
+
+    <fragment
+        android:id="@+id/dailyChallengesFragment"
+        android:name="com.google.mediapipe.examples.poselandmarker.fragment.DailyChallengesFragment"
+        android:label="Daily Challenges">
+        <action
+            android:id="@+id/action_dailyChallengesFragment_to_homeFragment"
+            app:destination="@id/homeFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/achievementsFragment"
+        android:name="com.google.mediapipe.examples.poselandmarker.fragment.AchievementsFragment"
+        android:label="Achievements">
+        <action
+            android:id="@+id/action_achievementsFragment_to_homeFragment"
+            app:destination="@id/homeFragment" />
+    </fragment>
+
+
 
 </navigation>

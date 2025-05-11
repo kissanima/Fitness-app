@@ -8,6 +8,9 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.AdapterView
+import android.widget.Button
+import android.widget.ProgressBar
+import android.widget.TextView
 import android.widget.Toast
 import androidx.camera.core.AspectRatio
 import androidx.camera.core.Camera
@@ -16,16 +19,24 @@ import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageProxy
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
+import androidx.cardview.widget.CardView
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.navigation.Navigation
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.database.MutableData
+import com.google.firebase.database.Transaction
+import com.google.firebase.database.ValueEventListener
 import com.google.mediapipe.examples.poselandmarker.MainViewModel
 import com.google.mediapipe.examples.poselandmarker.PoseLandmarkerHelper
 import com.google.mediapipe.examples.poselandmarker.R
+import com.google.mediapipe.examples.poselandmarker.challenges.DailyChallenge
+import com.google.mediapipe.examples.poselandmarker.challenges.DailyChallengeManager
 import com.google.mediapipe.examples.poselandmarker.databinding.FragmentCameraBinding
 import com.google.mediapipe.examples.poselandmarker.exercise.PlankTracker
 import com.google.mediapipe.examples.poselandmarker.exercise.PushUpHelper
@@ -34,6 +45,8 @@ import java.util.Locale
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
+import kotlin.math.min
+
 
 
 class CameraFragment : Fragment(), PoseLandmarkerHelper.LandmarkerListener {
@@ -65,6 +78,12 @@ class CameraFragment : Fragment(), PoseLandmarkerHelper.LandmarkerListener {
     private lateinit var userId: String
     private lateinit var plankTracker: PlankTracker
     private lateinit var pushUpHelper: PushUpHelper
+
+    // Daily Challenges
+    private lateinit var challengeBadge: CardView
+    private lateinit var challengeCard: CardView
+    private lateinit var challengeManager: DailyChallengeManager
+    private var currentChallenge: DailyChallenge? = null
 
     // Track if camera preview is visible
     var isCameraPreviewVisible = true
@@ -127,6 +146,7 @@ class CameraFragment : Fragment(), PoseLandmarkerHelper.LandmarkerListener {
         return fragmentCameraBinding.root
     }
 
+    var challengeFeatureEnabled = true // Set to true when ready to enable
     @SuppressLint("MissingPermission")
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -173,6 +193,45 @@ class CameraFragment : Fragment(), PoseLandmarkerHelper.LandmarkerListener {
         }
 
         initBottomSheetControls()
+
+        // Initialize challenge components
+        challengeBadge = view.findViewById(R.id.challengeBadge)
+        challengeCard = view.findViewById(R.id.challengeCard)
+        challengeManager = DailyChallengeManager(FirebaseDatabase.getInstance())
+
+        // Hide challenge card initially
+        challengeCard.visibility = View.GONE
+
+        // Set up badge click behavior
+        challengeBadge.setOnClickListener {
+            toggleChallengeCard()
+        }
+
+        // Set up dismiss button
+        view.findViewById<Button>(R.id.dismissButton).setOnClickListener {
+            challengeCard.visibility = View.GONE
+        }
+
+        // Load current challenge
+        if (challengeFeatureEnabled) {
+            Log.e("ChallengeFeature", "Clicked: ")
+            // Only try to find these views if the feature is enabled
+            try {
+                challengeBadge = view.findViewById(R.id.challengeBadge)
+                challengeCard = view.findViewById(R.id.challengeCard)
+                challengeManager = DailyChallengeManager(FirebaseDatabase.getInstance())
+
+                // Set up badge click behavior
+                challengeBadge.setOnClickListener {
+                    toggleChallengeCard()
+                }
+
+                // Load current challenge
+                loadCurrentChallenge()
+            } catch (e: Exception) {
+                Log.e("ChallengeFeature", "Error initializing challenge system: ${e.message}")
+            }
+        }
     }
 
     private fun initBottomSheetControls() {
@@ -401,6 +460,11 @@ class CameraFragment : Fragment(), PoseLandmarkerHelper.LandmarkerListener {
                 if (landmarksList.isNotEmpty() && landmarksList[0].isNotEmpty()) {
                     plankTracker.processLandmarks(landmarksList[0])
                     pushUpHelper.processLandmarks(landmarksList[0])
+
+
+                    // Update challenge progress
+                    updateChallengeProgress("pushup", pushUpHelper.pushUpCount)
+                    updateChallengeProgress("plank", (plankTracker.totalPlankDuration / 1000).toInt())
                 }
             }
         }
@@ -455,6 +519,178 @@ class CameraFragment : Fragment(), PoseLandmarkerHelper.LandmarkerListener {
         }
         // Rebind camera use cases with the new lens facing
         bindCameraUseCases()
+    }
+
+    private fun toggleChallengeCard() {
+
+        if (challengeCard.visibility == View.VISIBLE) {
+            Log.d(TAG, "Hiding challenge card")
+            // Animate card hiding
+            challengeCard.animate()
+                .alpha(0f)
+                .translationY(-50f)
+                .setDuration(300)
+                .withEndAction {
+                    challengeCard.visibility = View.GONE
+                }
+                .start()
+        } else if (currentChallenge != null) {
+            Log.d(TAG, "Showing challenge card for: ${currentChallenge?.title}")
+
+            // Prepare card
+            view?.findViewById<TextView>(R.id.challengeTitle)?.text = currentChallenge?.title
+            view?.findViewById<TextView>(R.id.challengeDescription)?.text = currentChallenge?.description
+            view?.findViewById<TextView>(R.id.challengeReward)?.text = "Reward: ${currentChallenge?.pointsReward} points"
+
+            // Reset position and show
+            challengeCard.translationY = -50f
+            challengeCard.alpha = 0f
+            challengeCard.visibility = View.VISIBLE
+
+            // Animate card showing
+            challengeCard.animate()
+                .alpha(1f)
+                .translationY(0f)
+                .setDuration(300)
+                .start()
+        }
+    }
+
+    private fun loadCurrentChallenge() {
+        val userId = FirebaseAuth.getInstance().currentUser?.uid ?: return
+
+        val challengesRef = FirebaseDatabase.getInstance().reference
+            .child("users").child(userId).child("challenges")
+
+        challengesRef.orderByChild("completed").equalTo(false).limitToFirst(1)
+            .addValueEventListener(object : ValueEventListener {
+                override fun onDataChange(snapshot: DataSnapshot) {
+                    if (snapshot.exists()) {
+                        for (challengeSnapshot in snapshot.children) {
+                            // Get the Firebase-generated ID (key)
+                            val challengeId = challengeSnapshot.key ?: ""
+
+                            // Get the challenge data
+                            val challenge = challengeSnapshot.getValue(DailyChallenge::class.java)
+
+                            if (challenge != null) {
+                                // Ensure we use the Firebase key as the ID
+                                currentChallenge = challenge.copy(id = challengeId)
+                                Log.d(TAG, "Loaded challenge: ID=${currentChallenge?.id}")
+                                pulseChallengeBadge()
+                                break
+                            }
+                        }
+                    }
+                }
+
+                override fun onCancelled(error: DatabaseError) {
+                    // Error handling
+                }
+            })
+    }
+
+
+    private fun pulseChallengeBadge() {
+        challengeBadge.animate()
+            .scaleX(1.2f)
+            .scaleY(1.2f)
+            .setDuration(300)
+            .withEndAction {
+                challengeBadge.animate()
+                    .scaleX(1.0f)
+                    .scaleY(1.0f)
+                    .setDuration(300)
+                    .start()
+            }
+            .start()
+    }
+
+    // Update progress when exercise is completed
+    private fun updateChallengeProgress(exerciseType: String, count: Int) {
+        if (!challengeFeatureEnabled || currentChallenge == null) return
+
+        val challenge = currentChallenge ?: return
+
+        if (challenge.exerciseType == exerciseType) {
+            // Update progress visually
+            val progressBar = view?.findViewById<ProgressBar>(R.id.challengeProgress)
+            progressBar?.let {
+                val progress = min(count * 100 / challenge.targetCount, 100)
+                it.progress = progress
+
+                // FIXED CODE - Save progress to Firebase with better error handling
+                val userId = FirebaseAuth.getInstance().currentUser?.uid
+                if (userId != null && challenge.id.isNotEmpty()) {
+                    Log.d(TAG, "Updating challenge: ${challenge.id} - Progress: $progress%")
+
+                    val challengeRef = FirebaseDatabase.getInstance().reference
+                        .child("users").child(userId).child("challenges").child(challenge.id)
+
+                    // Use updateChildren for more atomic updates
+                    val updates = HashMap<String, Any>()
+                    updates["progress"] = progress
+
+                    challengeRef.updateChildren(updates)
+                        .addOnSuccessListener {
+                            Log.d(TAG, "Successfully updated challenge progress")
+                        }
+                        .addOnFailureListener { e ->
+                            Log.e(TAG, "Failed to update: ${e.message}")
+                        }
+                }
+            }
+
+            // Check if challenge completed
+            if (count >= challenge.targetCount) {
+                completeChallenge(challenge.id)
+            }
+        }
+    }
+
+
+    private fun completeChallenge(challengeId: String) {
+        challengeManager.completeChallenge(challengeId)
+        showChallengeCompletedAnimation()
+        awardChallengePoints(currentChallenge?.pointsReward ?: 0)
+    }
+
+    private fun showChallengeCompletedAnimation() {
+        context?.let { ctx ->
+            // Show toast with animation
+            Toast.makeText(ctx, "Challenge Completed!", Toast.LENGTH_LONG).show()
+
+            // Visual feedback
+            challengeCard.animate()
+                .scaleX(1.1f)
+                .scaleY(1.1f)
+                .setDuration(300)
+                .withEndAction {
+                    challengeCard.animate()
+                        .scaleX(1.0f)
+                        .scaleY(1.0f)
+                        .setDuration(300)
+                        .start()
+                }
+                .start()
+        }
+    }
+
+    private fun awardChallengePoints(points: Int) {
+        val userId = FirebaseAuth.getInstance().currentUser?.uid ?: return
+        val userRef = FirebaseDatabase.getInstance().reference.child("users").child(userId)
+
+        userRef.child("totalPoints").runTransaction(object : Transaction.Handler {
+            override fun doTransaction(mutableData: MutableData): Transaction.Result {
+                val currentPoints = mutableData.getValue(Int::class.java) ?: 0
+                mutableData.value = currentPoints + points
+                return Transaction.success(mutableData)
+            }
+
+            override fun onComplete(error: DatabaseError?, committed: Boolean, currentData: DataSnapshot?) {
+                // Handle completion
+            }
+        })
     }
 }
 

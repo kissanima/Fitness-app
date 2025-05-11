@@ -18,10 +18,12 @@ import com.google.mediapipe.examples.poselandmarker.R
 import com.google.firebase.auth.FirebaseAuth
 import android.Manifest
 import android.util.Log
+import android.widget.ImageButton
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
+import com.google.mediapipe.examples.poselandmarker.achievements.AchievementManager
 
 class HomeFragment : Fragment() {
 
@@ -41,7 +43,7 @@ class HomeFragment : Fragment() {
     private lateinit var startWorkoutButton: Button
     private lateinit var leaderboardButton: Button
     private lateinit var nameTextView: TextView
-
+    private lateinit var dailyChallengesButton: ImageButton
     // New view references from layout
     private lateinit var avatarImageView: ImageView
 
@@ -69,11 +71,9 @@ class HomeFragment : Fragment() {
         startWorkoutButton = view.findViewById(R.id.buttonStartWorkout)
         leaderboardButton = view.findViewById(R.id.buttonLeaderboard)
         nameTextView = view.findViewById(R.id.textView_Name)
-
+        dailyChallengesButton = view.findViewById(R.id.buttonDailyChallenges)
         // Initialize new views
         avatarImageView = view.findViewById(R.id.avatarImage)
-
-
         // Get user data and update UI
         loadUserData()
 
@@ -86,13 +86,28 @@ class HomeFragment : Fragment() {
                 requestCameraPermission()
             }
         }
+        // Set up button click listener
+        dailyChallengesButton.setOnClickListener {
+            showDailyChallenges()
+        }
 
         leaderboardButton.setOnClickListener {
             // Navigate to leaderboard screen
              findNavController().navigate(R.id.action_homeFragment_to_leaderboardFragment)
         }
 
+        // In onViewCreated
+        val achievementsButton = view.findViewById<ImageButton>(R.id.buttonAchievements)
+        achievementsButton.setOnClickListener {
+            findNavController().navigate(R.id.action_homeFragment_to_achievementsFragment)
+        }
 
+
+    }
+
+    private fun showDailyChallenges() {
+        // Display daily challenges
+        findNavController().navigate(R.id.action_homeFragment_to_dailyChallengesFragment)
     }
 
     private fun navigateToWorkout() {
@@ -163,6 +178,12 @@ class HomeFragment : Fragment() {
         // Set default values before data loads
         healthProgressBar.progress = 100
         healthTextView.text = "Health: 100/100"
+
+        // Create an instance of AchievementManager
+        val achievementManager = AchievementManager(FirebaseDatabase.getInstance())
+
+        // Initialize all achievements so they show up as locked
+        achievementManager.initializeAllAchievements(userId)
 
         // Load attributes (strength, agility, stamina)
         userRef.child("attributes").addValueEventListener(object : ValueEventListener {

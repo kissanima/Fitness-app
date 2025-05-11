@@ -1,2 +1,2 @@
-ninja: Entering directory `C:\Thesis Finalize\Thesis\Fitness app\sdk\.cxx\Debug\554o3u6a\arm64-v8a'
+ninja: Entering directory `C:\Users\kissa\Desktop\Thesis\Fitness app\sdk\.cxx\Debug\554o3u6a\arm64-v8a'
 ninja: no work to do.

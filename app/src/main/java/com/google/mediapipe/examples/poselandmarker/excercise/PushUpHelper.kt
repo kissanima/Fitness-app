@@ -13,6 +13,8 @@ import android.widget.Toast
 import androidx.core.content.ContextCompat
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.*
+import com.google.mediapipe.examples.poselandmarker.achievements.AchievementConstants
+import com.google.mediapipe.examples.poselandmarker.achievements.AchievementManager
 import com.google.mediapipe.examples.poselandmarker.excercise.AngleHelper
 import com.google.mediapipe.tasks.components.containers.NormalizedLandmark
 import org.json.JSONArray
@@ -39,8 +41,8 @@ class PushUpHelper(
     private var maxConsecutiveReps = 0
 
     // Exercise metrics
-    private var pushUpCount = 0
-    private val pointsPerPushUp = 10
+    var pushUpCount = 0
+    private val pointsPerPushUp = 1
     private val strengthIncrementPerPushUp = 0.5f
     private var caloriesBurned = 0.0
 
@@ -80,7 +82,6 @@ class PushUpHelper(
     private var lastDatabaseUpdateTime = 0L
 
 
-
     /**
      * Initialize Firebase database references for frequently accessed paths
      */
@@ -100,7 +101,8 @@ class PushUpHelper(
                 if (!snapshot.hasChild("attributes") ||
                     !snapshot.hasChild("exercises") ||
                     !snapshot.child("exercises").hasChild("pushups") ||
-                    !snapshot.hasChild("analytics")) {
+                    !snapshot.hasChild("analytics")
+                ) {
 
                     // Create initial data structure
                     val updates = HashMap<String, Any>()
@@ -116,7 +118,8 @@ class PushUpHelper(
 
                     // Initialize exercises/pushups if missing
                     if (!snapshot.hasChild("exercises") ||
-                        !snapshot.child("exercises").hasChild("pushups")) {
+                        !snapshot.child("exercises").hasChild("pushups")
+                    ) {
                         val pushups = HashMap<String, Any>()
                         pushups["count"] = 0
                         pushups["points"] = 0
@@ -187,7 +190,8 @@ class PushUpHelper(
 
             // Determine positions
             val detectedTop = leftElbowAngle > topThreshold && rightElbowAngle > topThreshold
-            val detectedBottom = leftElbowAngle < bottomThreshold && rightElbowAngle < bottomThreshold
+            val detectedBottom =
+                leftElbowAngle < bottomThreshold && rightElbowAngle < bottomThreshold
 
             if (BuildConfig.DEBUG) {
                 Log.d(TAG, "Angles: L=$leftElbowAngle, R=$rightElbowAngle")
@@ -251,7 +255,7 @@ class PushUpHelper(
                 lastDatabaseUpdateTime = currentTime
             }
 
-            
+
 
             checkForAchievements()
             // Reset state after awarding points
@@ -293,7 +297,12 @@ class PushUpHelper(
         context?.let {
             val message = "Push-Ups: $newCount (Streak: $consecutiveReps)"
             pushUpOverlayText.text = message
-            pushUpOverlayText.setTextColor(ContextCompat.getColor(it, android.R.color.holo_green_light))
+            pushUpOverlayText.setTextColor(
+                ContextCompat.getColor(
+                    it,
+                    android.R.color.holo_green_light
+                )
+            )
 
             // Create counting animation
             ValueAnimator.ofFloat(0.8f, 1.2f, 1.0f).apply {
@@ -311,29 +320,36 @@ class PushUpHelper(
      * Check for achievements and display appropriate feedback
      */
     private fun checkForAchievements() {
-        val achievements = mutableListOf<String>()
+        Log.d(TAG, "Checking achievements - pushUpCount: $pushUpCount, consecutiveReps: $consecutiveReps")
+        val achievementManager = AchievementManager(database)
 
-        // Rep count achievements
-        when (pushUpCount) {
-            10 -> achievements.add("First 10 Push-ups! 🎉")
-            25 -> achievements.add("Quarter-Century: 25 Push-ups! 💪")
-            50 -> achievements.add("Half-Century: 50 Push-ups! 🔥")
-            100 -> achievements.add("CENTURY! 100 Push-ups! 🏆")
-        }
-
-        // Streak achievements
-        when (consecutiveReps) {
-            5 -> achievements.add("5 Push-ups in a row! 🔥")
-            10 -> achievements.add("10 consecutive Push-ups! 🔥🔥")
-            20 -> achievements.add("BEAST MODE: 20 consecutive! 🔥🔥🔥")
-        }
-
-        // Display achievements
-        if (achievements.isNotEmpty()) {
-            showAchievementToast(achievements.joinToString("\n"))
-            logAchievements(achievements)
+        // Check push-up count achievements
+        for ((id, info) in AchievementConstants.PUSHUP_ACHIEVEMENTS) {
+            Log.d(TAG, "Checking achievement: $id (threshold: ${info.threshold})")
+            if (id.startsWith("pushup_streak")) {
+                if (consecutiveReps >= info.threshold) {
+                    achievementManager.unlockAchievement(userId, id, mapOf(
+                        "title" to info.title,
+                        "description" to info.description,
+                        "exerciseType" to "pushup",
+                        "value" to consecutiveReps
+                    ))
+                    showAchievementToast(info.title)
+                }
+            } else {
+                if (pushUpCount >= info.threshold) {
+                    achievementManager.unlockAchievement(userId, id, mapOf(
+                        "title" to info.title,
+                        "description" to info.description,
+                        "exerciseType" to "pushup",
+                        "value" to pushUpCount
+                    ))
+                    showAchievementToast(info.title)
+                }
+            }
         }
     }
+
 
     /**
      * Display customized achievement toast
@@ -361,7 +377,6 @@ class PushUpHelper(
      */
     private fun logAchievements(achievements: List<String>) {
         try {
-
 
 
             // Save to user's achievements in database
@@ -393,9 +408,11 @@ class PushUpHelper(
             val batchUpdates = HashMap<String, Any>()
             batchUpdates["exercises/pushups/count"] = ServerValue.increment(1)
             batchUpdates["exercises/pushups/points"] = ServerValue.increment(pointsEarned.toLong())
-            batchUpdates["exercises/pushups/bestStreak"] = ServerValue.increment(0) // Will be updated by transaction
+            batchUpdates["exercises/pushups/bestStreak"] =
+                ServerValue.increment(0) // Will be updated by transaction
             batchUpdates["totalPoints"] = ServerValue.increment(pointsEarned.toLong())
-            batchUpdates["analytics/totalCaloriesBurned"] = ServerValue.increment(CALORIES_PER_PUSHUP)
+            batchUpdates["analytics/totalCaloriesBurned"] =
+                ServerValue.increment(CALORIES_PER_PUSHUP)
 
             // Apply batch updates
             userRef.updateChildren(batchUpdates)
@@ -432,7 +449,11 @@ class PushUpHelper(
                     return Transaction.success(mutableData)
                 }
 
-                override fun onComplete(error: DatabaseError?, committed: Boolean, currentData: DataSnapshot?) {
+                override fun onComplete(
+                    error: DatabaseError?,
+                    committed: Boolean,
+                    currentData: DataSnapshot?
+                ) {
                     if (error != null) {
                         Log.e(TAG, "Failed to update best streak: ${error.message}")
                     } else if (committed && currentData != null) {
@@ -452,7 +473,11 @@ class PushUpHelper(
                     return Transaction.success(mutableData)
                 }
 
-                override fun onComplete(error: DatabaseError?, committed: Boolean, currentData: DataSnapshot?) {
+                override fun onComplete(
+                    error: DatabaseError?,
+                    committed: Boolean,
+                    currentData: DataSnapshot?
+                ) {
                     if (error != null) {
                         Log.e(TAG, "Failed to update strength: ${error.message}")
                         retryOnTransactionFailure("strength", strengthIncrementPerPushUp)
@@ -607,22 +632,27 @@ class PushUpHelper(
                 // If streak continues or this is first workout
                 if (lastWorkoutTimestamp >= previousDate || lastWorkoutTimestamp.toInt() == 0) {
                     // Increment streak
-                    analyticsRef.child("workoutStreak").runTransaction(object : Transaction.Handler {
-                        override fun doTransaction(mutableData: MutableData): Transaction.Result {
-                            val currentStreak = mutableData.getValue(Int::class.java) ?: 0
-                            mutableData.value = currentStreak + 1
-                            return Transaction.success(mutableData)
-                        }
+                    analyticsRef.child("workoutStreak")
+                        .runTransaction(object : Transaction.Handler {
+                            override fun doTransaction(mutableData: MutableData): Transaction.Result {
+                                val currentStreak = mutableData.getValue(Int::class.java) ?: 0
+                                mutableData.value = currentStreak + 1
+                                return Transaction.success(mutableData)
+                            }
 
-                        override fun onComplete(error: DatabaseError?, committed: Boolean, currentData: DataSnapshot?) {
-                            if (error == null && committed && currentData != null) {
-                                val newStreak = currentData.getValue(Int::class.java) ?: 0
-                                if (newStreak > 1) {
-                                    showAchievementToast("Workout Streak: $newStreak days! 🔥")
+                            override fun onComplete(
+                                error: DatabaseError?,
+                                committed: Boolean,
+                                currentData: DataSnapshot?
+                            ) {
+                                if (error == null && committed && currentData != null) {
+                                    val newStreak = currentData.getValue(Int::class.java) ?: 0
+                                    if (newStreak > 1) {
+                                        showAchievementToast("Workout Streak: $newStreak days! 🔥")
+                                    }
                                 }
                             }
-                        }
-                    })
+                        })
                 } else {
                     // Streak broken, reset to 1
                     analyticsRef.child("workoutStreak").setValue(1)
@@ -630,7 +660,6 @@ class PushUpHelper(
             }
         }
     }
-
 
 
     /**

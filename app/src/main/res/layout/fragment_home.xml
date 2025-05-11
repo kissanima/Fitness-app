@@ -19,7 +19,8 @@
         android:padding="10dp"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
+        app:layout_constraintEnd_toEndOf="parent"
+        android:visibility="invisible">
 
         <TextView
             android:id="@+id/textHealth"
@@ -202,15 +203,29 @@
         app:layout_constraintTop_toBottomOf="@+id/healthStaminaContainer"
         app:srcCompat="@android:drawable/btn_star_big_on" />
 
+
     <ImageButton
-        android:id="@+id/imageButton"
+        android:id="@+id/buttonAchievements"
         android:layout_width="55dp"
         android:layout_height="56dp"
         android:layout_marginStart="12dp"
         android:layout_marginTop="32dp"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/imageButton2"
-        app:srcCompat="@mipmap/battle" />
+        app:srcCompat="@mipmap/achievements" />
+
+    <ImageButton
+        android:id="@+id/buttonDailyChallenges"
+        android:layout_width="54dp"
+        android:layout_height="50dp"
+        android:layout_marginStart="12dp"
+        android:layout_marginTop="16dp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/buttonAchievements"
+        app:srcCompat="@android:drawable/ic_menu_today" />
+
+
+
 
     <TextView
         android:id="@+id/textView_Name"
