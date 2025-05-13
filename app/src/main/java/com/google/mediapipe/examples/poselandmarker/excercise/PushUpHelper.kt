@@ -170,12 +170,22 @@ class PushUpHelper(
         isProcessing = true
 
         // Ensure there are enough landmarks
-        if (landmarks.size < 17) {
+        if (landmarks.size < 29) { // Need landmarks up to ankles
             isProcessing = false
             return
         }
 
         try {
+            // REMOVE THIS SECTION - Confidence checks causing errors
+            // Check confidence for key landmarks
+            // for (index in keyPoints) {
+            //    if (landmarks[index].visibility < 0.7f) {
+            //        // Skip processing if landmarks aren't reliable
+            //        isProcessing = false
+            //        return
+            //    }
+            // }
+
             // Extract the relevant landmarks
             val leftShoulder = AngleHelper.PointF(landmarks[11].x(), landmarks[11].y())
             val rightShoulder = AngleHelper.PointF(landmarks[12].x(), landmarks[12].y())
@@ -183,6 +193,10 @@ class PushUpHelper(
             val rightElbow = AngleHelper.PointF(landmarks[14].x(), landmarks[14].y())
             val leftWrist = AngleHelper.PointF(landmarks[15].x(), landmarks[15].y())
             val rightWrist = AngleHelper.PointF(landmarks[16].x(), landmarks[16].y())
+            val leftHip = AngleHelper.PointF(landmarks[23].x(), landmarks[23].y())
+            val rightHip = AngleHelper.PointF(landmarks[24].x(), landmarks[24].y())
+            val leftAnkle = AngleHelper.PointF(landmarks[27].x(), landmarks[27].y())
+            val rightAnkle = AngleHelper.PointF(landmarks[28].x(), landmarks[28].y())
 
             // Calculate elbow angles directly
             val leftElbowAngle = angleHelper.calculateAngle(leftShoulder, leftElbow, leftWrist)
@@ -190,23 +204,58 @@ class PushUpHelper(
 
             // Determine positions
             val detectedTop = leftElbowAngle > topThreshold && rightElbowAngle > topThreshold
-            val detectedBottom =
-                leftElbowAngle < bottomThreshold && rightElbowAngle < bottomThreshold
+            val detectedBottom = leftElbowAngle < bottomThreshold && rightElbowAngle < bottomThreshold
 
             if (BuildConfig.DEBUG) {
                 Log.d(TAG, "Angles: L=$leftElbowAngle, R=$rightElbowAngle")
                 Log.d(TAG, "Detected: Top=$detectedTop, Bottom=$detectedBottom")
             }
 
-            // Handle state transitions
-            handlePushUpState(detectedTop, detectedBottom)
+            // Enhanced anatomical constraints
+            // 1. Shoulders should be aligned horizontally
+            val shoulderAlignment = Math.abs(leftShoulder.y - rightShoulder.y) < 0.12f // Relaxed from 0.08f
+
+            // 2. Calculate average y-positions for body parts
+            val shoulderAvgY = (leftShoulder.y + rightShoulder.y) / 2f
+            val hipAvgY = (leftHip.y + rightHip.y) / 2f
+            val ankleAvgY = (leftAnkle.y + rightAnkle.y) / 2f
+
+            // 3. Body should be relatively straight
+            val bodyAlignment = Math.abs(shoulderAvgY - hipAvgY) < 0.20f // Relaxed from 0.15f
+
+            // 4. Proper hip height (not too high or too low)
+            val properHipHeight = Math.abs(hipAvgY - ((shoulderAvgY + ankleAvgY) / 2f)) < 0.15f // Relaxed from 0.1f
+
+            // 5. Wrists should be approximately shoulder-width apart
+            val shoulderDistance = distance(leftShoulder, rightShoulder)
+            val wristDistance = distance(leftWrist, rightWrist)
+            val wristPositioning = wristDistance / shoulderDistance
+            val properWristPositioning = wristPositioning >= 0.6f && wristPositioning <= 1.7f // Relaxed from 0.7f-1.5f
+
+            // REMOVE this confidence-based condition
+            // Use a simpler condition that doesn't rely on confidence/visibility
+            val isValidPushupPosition = (detectedTop || detectedBottom) &&
+                    shoulderAlignment &&
+                    bodyAlignment &&
+                    properHipHeight &&
+                    properWristPositioning
+
+            if (isValidPushupPosition) {
+                // Handle state transitions only if valid position
+                handlePushUpState(detectedTop, detectedBottom)
+            }
         } catch (e: Exception) {
             Log.e(TAG, "Error processing landmarks: ${e.message}")
-
         } finally {
             isProcessing = false
         }
     }
+
+    // Helper function to calculate distance between two points
+    private fun distance(p1: AngleHelper.PointF, p2: AngleHelper.PointF): Float {
+        return kotlin.math.sqrt((p1.x - p2.x) * (p1.x - p2.x) + (p1.y - p2.y) * (p1.y - p2.y))
+    }
+
 
     /**
      * Enhanced state machine for push-up detection with better debouncing

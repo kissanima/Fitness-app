@@ -17,40 +17,63 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
+    <!-- Add this near the camera switch button in fragment_camera.xml -->
+    <LinearLayout
+        android:id="@+id/clahe_control_container"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|start"
+        android:layout_marginBottom="80dp"
+        android:layout_marginStart="16dp"
+        android:background="#80000000"
+        android:padding="1dp"
+        android:orientation="horizontal">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="CLAHE"
+            android:textColor="@android:color/white"
+            android:textSize="14sp"
+            android:layout_marginEnd="8dp"/>
+
+        <androidx.appcompat.widget.SwitchCompat
+            android:id="@+id/switch_clahe"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:checked="true"/>
+    </LinearLayout>
+
     <!-- This TextView is the overlay text that displays the message -->
     <!-- Plank detection overlay text -->
     <TextView
         android:id="@+id/plankOverlayText"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_gravity="top|center_horizontal"
+        android:layout_gravity="bottom|center_horizontal"
+        android:layout_marginBottom="80dp"
         android:background="#80000000"
         android:padding="8dp"
         android:text="Plank detected!"
         android:textColor="#FFFFFF"
         android:textSize="18sp"
         android:textStyle="bold"
-        android:visibility="gone"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginTop="48dp"/>
+        android:visibility="gone" />
 
     <TextView
         android:id="@+id/pushUpOverlayText"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_margin="16dp"
+        android:layout_gravity="bottom|center_horizontal"
+        android:layout_marginBottom="32dp"
+        android:layout_marginLeft="16dp"
+        android:layout_marginRight="16dp"
         android:background="#80000000"
         android:padding="8dp"
         android:textColor="@android:color/white"
         android:textSize="20sp"
-        android:visibility="gone"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.1" />
+        android:visibility="gone" />
+
 
 
 

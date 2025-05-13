@@ -7,6 +7,7 @@ import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.google.mediapipe.examples.poselandmarker.R
+import android.util.Log
 import com.google.mediapipe.examples.poselandmarker.achievements.Achievement
 
 class AchievementAdapter(private val achievements: MutableList<Achievement>) :
@@ -41,6 +42,9 @@ class AchievementAdapter(private val achievements: MutableList<Achievement>) :
             holder.statusTextView.text = "LOCKED"
             holder.statusTextView.setTextColor(holder.itemView.context.getColor(android.R.color.darker_gray))
         }
+
+        // Debugging - add this
+        Log.d("AchievementAdapter", "Binding achievement: ${achievement.id}, isUnlocked: ${achievement.isUnlocked}")
     }
 
     override fun getItemCount() = achievements.size

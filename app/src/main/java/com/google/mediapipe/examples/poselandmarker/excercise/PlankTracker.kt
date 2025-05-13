@@ -60,6 +60,14 @@ class PlankTracker(
         private const val DATABASE_RETRY_ATTEMPTS = 3
     }
 
+    // State tracking variables
+    private var potentialPlankStartTime = 0L
+    private val PLANK_CONFIRMATION_TIME = 2000L // 2 seconds
+    private var isShowingPlankNotification = false
+    private val handler = Handler(Looper.getMainLooper())
+    private var pendingNotificationRunnable: Runnable? = null
+
+
     init {
         if (userId.isNotEmpty()) {
             initializeDatabaseReferences()
@@ -176,28 +184,51 @@ class PlankTracker(
      * Handle transitions between plank states and time-based events
      */
     private fun handlePlankState(isInPlank: Boolean, currentTime: Long) {
-        when {
-            // Just entered plank position
-            isInPlank && !isInPlankPosition -> {
-                startPlank(currentTime)
-            }
+        if (isInPlank) {
+            if (potentialPlankStartTime == 0L) {
+                // First detection of potential plank position
+                potentialPlankStartTime = currentTime
 
-            // Continuing plank position
-            isInPlank && isInPlankPosition -> {
+                // Create a local variable for the Runnable
+                val runnable = Runnable {
+                    if (!isInPlankPosition) {
+                        startPlank(potentialPlankStartTime) // Start using original time
+
+                        // Show overlay text when plank is confirmed
+                        plankOverlayText?.post {
+                            plankOverlayText?.visibility = View.VISIBLE
+                        }
+                    }
+                }
+
+                // Assign to property and post delay
+                pendingNotificationRunnable = runnable
+                handler.postDelayed(runnable, PLANK_CONFIRMATION_TIME)
+
+            } else if (isInPlankPosition) {
+                // Already in confirmed plank, continue tracking
                 continuePlank(currentTime)
             }
+        } else {
+            // Not in plank position
+            // Cancel any pending notification
+            pendingNotificationRunnable?.let {
+                handler.removeCallbacks(it)
+                pendingNotificationRunnable = null
+            }
 
-            // Just exited plank position
-            !isInPlank && isInPlankPosition -> {
+            if (isInPlankPosition) {
+                // Was in confirmed plank, now ended
                 endPlank(currentTime)
             }
 
-            // Not in plank position
-            else -> {
-                plankOverlayText.visibility = View.GONE
-            }
+            // Reset tracking
+            potentialPlankStartTime = 0L
+            plankOverlayText?.visibility = View.GONE
         }
     }
+
+
 
     /**
      * Start tracking a new plank exercise
@@ -621,12 +652,32 @@ class PlankTracker(
      * Should be called in onPause() of the host fragment/activity
      */
     fun cleanup() {
+        // Cancel any pending notifications
+        pendingNotificationRunnable?.let {
+            handler.removeCallbacks(it)
+            pendingNotificationRunnable = null
+        }
+
+        // Save the current session if in plank position
         if (isInPlankPosition) {
             val totalTime = System.currentTimeMillis() - plankStartTime
             savePlankSession(totalTime)
-            isInPlankPosition = false
         }
+
+        // Reset all tracking variables
+        isInPlankPosition = false
+        potentialPlankStartTime = 0L
+        isShowingPlankNotification = false
+        plankStartTime = 0L
+        lastPointAwardTime = 0L
+        totalPlankDuration = 0L
+        sessionPointsEarned = 0
+        sessionSeconds = 0
+
+        // Clear UI
+        plankOverlayText?.visibility = View.GONE
     }
+
 
     /**
      * Schedule retry for batch updates with exponential backoff and jitter

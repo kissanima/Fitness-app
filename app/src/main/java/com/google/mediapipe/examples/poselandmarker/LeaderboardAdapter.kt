@@ -7,7 +7,7 @@ import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.google.mediapipe.examples.poselandmarker.UserRanking
 
-class LeaderboardAdapter(private val rankings: List<UserRanking>) :
+class LeaderboardAdapter(private val rankings: MutableList<UserRanking>) :
     RecyclerView.Adapter<LeaderboardAdapter.ViewHolder>() {
 
     class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
@@ -25,13 +25,24 @@ class LeaderboardAdapter(private val rankings: List<UserRanking>) :
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val ranking = rankings[position]
+
         holder.rankTextView.text = (position + 1).toString()
         holder.nameTextView.text = ranking.userName
 
-        val statsText = "Push-ups: ${ranking.pushUpPoints }pts · Crunches: ${ranking.crunchPoints}pts · Plank: ${ranking.plankPoints}pts"
+        val statsText = "Push-ups: ${ranking.pushUpPoints}pts | " +
+                "Crunches: ${ranking.crunchPoints}pts | " +
+                "Plank: ${ranking.plankPoints}pts | " +
+                "Achievements: ${ranking.achievementCount}"
+
         holder.statsTextView.text = statsText
         holder.pointsTextView.text = "${ranking.totalPoints} pts"
     }
 
-    override fun getItemCount() = rankings.size
+    override fun getItemCount(): Int = rankings.size
+
+    fun updateRankings(newRankings: List<UserRanking>) {
+        rankings.clear()
+        rankings.addAll(newRankings)
+        notifyDataSetChanged()
+    }
 }

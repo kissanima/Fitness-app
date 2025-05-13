@@ -1,5 +1,7 @@
 package com.google.mediapipe.examples.poselandmarker
 
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 
 /**
@@ -15,6 +17,9 @@ class MainViewModel : ViewModel() {
         .DEFAULT_POSE_TRACKING_CONFIDENCE
     private var _minPosePresenceConfidence: Float = PoseLandmarkerHelper
         .DEFAULT_POSE_PRESENCE_CONFIDENCE
+
+    private var _claheEnabled = MutableLiveData<Boolean>(true)
+    val claheEnabled: LiveData<Boolean> = _claheEnabled
 
     val currentDelegate: Int get() = _delegate
     val currentModel: Int get() = _model
@@ -46,5 +51,9 @@ class MainViewModel : ViewModel() {
 
     fun setModel(model: Int) {
         _model = model
+    }
+
+    fun setClaheEnabled(enabled: Boolean) {
+        _claheEnabled.value = enabled
     }
 }

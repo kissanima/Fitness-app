@@ -2,8 +2,9 @@ package com.google.mediapipe.examples.poselandmarker
 
 data class UserRanking(
     val userName: String = "",
-    val totalPoints: Int = 0,
-    val pushUpPoints : Int = 0,  // Note: capital 'U' to match Firebase structure
+    val pushUpPoints: Int = 0,
     val crunchPoints: Int = 0,
-    val plankPoints: Int = 0
+    val plankPoints: Int = 0,
+    val totalPoints: Int = 0,
+    val achievementCount: Int = 0  // Add this field
 )

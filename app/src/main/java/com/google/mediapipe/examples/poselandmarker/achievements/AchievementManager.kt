@@ -45,6 +45,24 @@ class AchievementManager(private val database: FirebaseDatabase) {
                                 Log.d(TAG, "Achievement unlocked: $achievementId")
                                 // Award points for achievement
                                 awardAchievementPoints(userId, 25) // 25 points per achievement
+
+                                // Update achievement count in leaderboard
+                                val leaderboardRef = database.reference.child("leaderboard").child(userId)
+                                leaderboardRef.child("achievementCount").runTransaction(object : Transaction.Handler {
+                                    override fun doTransaction(mutableData: MutableData): Transaction.Result {
+                                        val currentCount = mutableData.getValue(Int::class.java) ?: 0
+                                        mutableData.value = currentCount + 1
+                                        return Transaction.success(mutableData)
+                                    }
+
+                                    override fun onComplete(error: DatabaseError?, committed: Boolean, currentData: DataSnapshot?) {
+                                        if (error != null) {
+                                            Log.e(TAG, "Failed to update achievement count in leaderboard", error.toException())
+                                        } else {
+                                            Log.d(TAG, "Successfully updated achievement count in leaderboard")
+                                        }
+                                    }
+                                })
                             }
                             .addOnFailureListener { e ->
                                 Log.e(TAG, "Failed to unlock achievement: $achievementId", e)
@@ -112,10 +130,26 @@ class AchievementManager(private val database: FirebaseDatabase) {
                 // Override with actual database values
                 for (achievementSnapshot in snapshot.children) {
                     val id = achievementSnapshot.key ?: continue
-                    achievementSnapshot.getValue(Achievement::class.java)?.let {
-                        allPossibleAchievements[id] = it
-                    }
+                    val isUnlocked = achievementSnapshot.child("isUnlocked").getValue(Boolean::class.java) ?: false
+                    val title = achievementSnapshot.child("title").getValue(String::class.java) ?: ""
+                    val description = achievementSnapshot.child("description").getValue(String::class.java) ?: ""
+                    val exerciseType = achievementSnapshot.child("exerciseType").getValue(String::class.java) ?: ""
+                    val timestamp = achievementSnapshot.child("timestamp").getValue(Long::class.java) ?: System.currentTimeMillis()
+
+                    // Manually create the Achievement object with correct values
+                    val achievement = Achievement(
+                        id = id,
+                        title = title,
+                        description = description,
+                        exerciseType = exerciseType,
+                        timestamp = timestamp,
+                        isUnlocked = isUnlocked  // This ensures the correct unlocked status
+                    )
+
+                    allPossibleAchievements[id] = achievement
                 }
+
+
 
                 // Convert map to list
                 achievements.addAll(allPossibleAchievements.values)
@@ -129,6 +163,7 @@ class AchievementManager(private val database: FirebaseDatabase) {
             }
         })
     }
+
 
 
     fun initializeAllAchievements(userId: String) {
@@ -170,5 +205,29 @@ class AchievementManager(private val database: FirebaseDatabase) {
             }
         }
     }
+
+    fun updateLeaderboardAchievementCount(userId: String) {
+        val achievementsRef = database.reference.child("users").child(userId).child("achievements")
+        achievementsRef.addListenerForSingleValueEvent(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                var unlockedCount = 0
+                for (achievementSnapshot in snapshot.children) {
+                    val isUnlocked = achievementSnapshot.child("isUnlocked").getValue(Boolean::class.java) ?: false
+                    if (isUnlocked) {
+                        unlockedCount++
+                    }
+                }
+
+                // Update the leaderboard entry
+                val leaderboardRef = database.reference.child("leaderboard").child(userId)
+                leaderboardRef.child("achievementCount").setValue(unlockedCount)
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                Log.e(TAG, "Error counting achievements", error.toException())
+            }
+        })
+    }
+
 
 }

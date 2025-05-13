@@ -12,6 +12,7 @@ import android.widget.Button
 import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
+import androidx.appcompat.widget.SwitchCompat
 import androidx.camera.core.AspectRatio
 import androidx.camera.core.Camera
 import androidx.camera.core.CameraSelector
@@ -125,8 +126,10 @@ class CameraFragment : Fragment(), PoseLandmarkerHelper.LandmarkerListener {
             viewModel.setMinPoseTrackingConfidence(poseLandmarkerHelper.minPoseTrackingConfidence)
             viewModel.setMinPosePresenceConfidence(poseLandmarkerHelper.minPosePresenceConfidence)
             viewModel.setDelegate(poseLandmarkerHelper.currentDelegate)
+            viewModel.setClaheEnabled(poseLandmarkerHelper.isClaheEnabled)
             backgroundExecutor.execute { poseLandmarkerHelper.clearPoseLandmarker() }
         }
+
     }
 
     override fun onDestroyView() {
@@ -150,6 +153,11 @@ class CameraFragment : Fragment(), PoseLandmarkerHelper.LandmarkerListener {
     @SuppressLint("MissingPermission")
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
+
+
+
+
 
         // Camera switch button setup
         val cameraSwitchButton: FloatingActionButton = view.findViewById(R.id.camera_switch_button)
@@ -230,6 +238,15 @@ class CameraFragment : Fragment(), PoseLandmarkerHelper.LandmarkerListener {
                 loadCurrentChallenge()
             } catch (e: Exception) {
                 Log.e("ChallengeFeature", "Error initializing challenge system: ${e.message}")
+            }
+        }
+
+        // Initialize CLAHE switch
+        val claheSwitch = view.findViewById<SwitchCompat>(R.id.switch_clahe)
+        claheSwitch.isChecked = true // Default setting
+        claheSwitch.setOnCheckedChangeListener { _, isChecked ->
+            if (this::poseLandmarkerHelper.isInitialized) {
+                poseLandmarkerHelper.isClaheEnabled = isChecked
             }
         }
     }

@@ -24,6 +24,7 @@ import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
 import com.google.mediapipe.examples.poselandmarker.achievements.AchievementManager
+import com.google.mediapipe.examples.poselandmarker.challenges.DailyChallengeManager
 
 class HomeFragment : Fragment() {
 
@@ -184,6 +185,10 @@ class HomeFragment : Fragment() {
 
         // Initialize all achievements so they show up as locked
         achievementManager.initializeAllAchievements(userId)
+
+        // Initialize daily challenges - add this line
+        val challengeManager = DailyChallengeManager(FirebaseDatabase.getInstance())
+        challengeManager.checkAndGenerateChallenge(userId)
 
         // Load attributes (strength, agility, stamina)
         userRef.child("attributes").addValueEventListener(object : ValueEventListener {

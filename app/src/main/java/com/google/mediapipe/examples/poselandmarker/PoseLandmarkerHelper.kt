@@ -33,7 +33,7 @@ class PoseLandmarkerHelper(
     // For this example this needs to be a var so it can be reset on changes.
     // If the Pose Landmarker will not change, a lazy val would be preferable.
     private var poseLandmarker: PoseLandmarker? = null
-
+    var isClaheEnabled: Boolean = true  // Default to enabled
     init {
         setupPoseLandmarker()
     }
@@ -177,10 +177,20 @@ class PoseLandmarkerHelper(
             bitmapBuffer, 0, 0, bitmapBuffer.width, bitmapBuffer.height,
             matrix, true
         )
-        val enhancedBitmap = ImageEnhancer.applyCLAHE(rotatedBitmap)
+        // Conditionally apply CLAHE based on toggle state
+        val processedBitmap = if (isClaheEnabled) {
+            val result = ImageEnhancer.applyCLAHE(rotatedBitmap)
+            Log.d("CLAHE", "CLAHE applied")
+            result
+        } else {
+            Log.d("CLAHE", "CLAHE not applied")
+            rotatedBitmap
+        }
+
+
 
         // Convert the input Bitmap object to an MPImage object to run inference
-        val mpImage = BitmapImageBuilder(enhancedBitmap).build()
+        val mpImage = BitmapImageBuilder(processedBitmap).build()
 
         detectAsync(mpImage, frameTime)
     }
